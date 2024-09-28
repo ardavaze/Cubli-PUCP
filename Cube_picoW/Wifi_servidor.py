@@ -1,7 +1,7 @@
 
 try:
   import usocket as socket
-except:
+except Exception:
   import socket
 
 from machine import Pin
