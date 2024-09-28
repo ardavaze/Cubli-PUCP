@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Control de Velocidad</title>
+    <link rel="stylesheet" href="index.css">
+    <script src="./index.js"></script>
+</head>
+<body>
+    <h1>Raspberry Pi Pico W Web Server</h1>
+    <p>RGB Control</p>    
+    <table>
+        <tbody>
+            <tr>
+                <td>
+                    <button id="btnStart" onclick="comenzar()">Comenzar</button>
+                </td>
+                <td>
+                </td>
+                <td>
+                    <input type="text" id="ip_host" placeholder="Ingresa la ip de la raspberry pico w">
+                </td>
+            </tr> 
+            <tr>
+                <td>  
+                    <h1>Velocidad: <span id="velocidad">0</span> rpm</h1>
+                    <input type="number" id="velocidadInput" placeholder="Nueva velocidad">
+                    <button id="btnVelocidad" onclick="enviarDatosVelocidad()" disabled="true">Enviar</button>
+                </td>
+                <td width="50px">
+
+                </td>
+                <td>  
+                    <h1>Ángulo: <span id="angulo">0</span> grados</h1>
+                    <input type="number" id="anguloInput" placeholder="Nuevo ángulo">
+                    <button id= "btnAngulo" onclick="enviarDatosAngulo()" disabled="true">Enviar</button>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <button id="btnFreno" onclick="frenado()">Freno</button>
+                </td>
+            </tr> 
+            <tr>
+                <td colspan="3">
+                    <center>
+                        <img src="/raspberry-pi-logo.png" alt="Logo Raspberry Pi" width="150" height="150">
+                    </center>
+                </td>
+            </tr> 
+        </tbody>
+    </table>
+
+    
+</body>
+</html>
