@@ -10,7 +10,7 @@ function comenzar(){
             document.getElementById('ip_host').disabled=false
             document.getElementById('btnStart').textContent="Comenzar"
             document.getElementById('btnStart').style.backgroundColor="green"
-            //clearInterval(intervalId);
+            clearInterval(intervalId);
             document.getElementById('velocidad').innerText = "0";
             document.getElementById('angulo').innerText = "0";
             start=!start;
@@ -25,7 +25,7 @@ function comenzar(){
                 document.getElementById('btnStart').textContent="Detener"
                 document.getElementById('btnStart').style.backgroundColor="rgb(189, 0, 0)"
                 document.getElementById('ip_host').disabled=true
-                //intervalId=setInterval(obtenerDatos,1000)
+                intervalId=setInterval(obtenerDatos,1000)
                 start=!start;
             })
         }
@@ -69,24 +69,22 @@ function enviarDatos(tipo_dato,dato,tiempoEspera,funcion){
     xhr.timeout=tiempoEspera
     // Configura la solicitud POST
     xhr.open("POST", "http://"+ip_rasp+"/"+tipo_dato, true);
-	xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
-    xhr.send("hola\r\n");
+	xhr.setRequestHeader("Content-Type", "text/plain");
+	body = dato
+    xhr.send(body + "\r\n");
 
     // Maneja la respuesta
-    xhr.onreadystatechange = function() {
-		console.log(xhr.readyState) 
-		console.log(xhr.status)
-		console.log(xhr.statusText)
-		
+    xhr.onreadystatechange = function() {		
         if (xhr.readyState === 4 && xhr.status === 200) {
             funcion()
         }
     };
+	xhr.onerror=xhr.abort
 }
 function recibirDatos(tipo_dato,elementId,tiempoEspera){
     const xhr = new XMLHttpRequest();
     xhr.timeout=tiempoEspera
-    xhr.open("GET", "http://"+ip_rasp+"/get_"+tipo_dato, true);
+    xhr.open("GET", "http://"+ip_rasp+"/"+tipo_dato, true);
     xhr.onreadystatechange = function() {
         if (xhr.readyState === 4 && xhr.status === 200) {
             document.getElementById(elementId).innerText = xhr.responseText;

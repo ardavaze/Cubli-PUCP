@@ -5,8 +5,8 @@ from machine import Pin
 import asyncio
 led = Pin(15, Pin.OUT) 
 onboard = Pin("LED", Pin.OUT, value=0)   
-ssid = 'CasaVZ'  
-password = '23060507'   
+ssid = 'redpucp'  
+password = 'C9AA28BA93'   
 html = """<!DOCTYPE html>  <html>      <head> <title>Pico W</title> </head>      <body> <h1>Pico W</h1>          <p>%s</p>      </body>  </html>  """   
 wlan = network.WLAN(network.STA_IF)  
 
@@ -29,31 +29,17 @@ def connect_to_network() :
     print('ip = ' + status[0])
 async def serve_client(reader: asyncio.StreamReader, writer):
   print("Client connected") 
-  request_line = await reader.readline() 
-  print("Request:", request_line)
+  method_line = await reader.readline() 
+  print(method_line)
 # We are not interested in HTTP request headers, skip them 
-  while request_line != b"\r\n": 
+  while await reader.readline() != b"\r\n": 
+    pass
+  if method_line.decode('utf-8').startswith("POST"):
     request_line = await reader.readline()
     print(request_line)
-  request_line = await reader.readline()
-  print(request_line)
-  request = str(request_line) 
-  led_on = request.find('/light/on') 
-  led_off = request.find('/light/off') 
-  print( 'led on = ' + str(led_on)) 
-  print( 'led off = ' + str(led_off)) 
-  stateis = "" 
-  if led_on == 6: 
-    print("led on") 
-    led.value(1) 
-    stateis = "LED is ON" 
-  if led_off == 6: 
-    print("led off") 
-    led.value(0) 
-    stateis = "LED is OFF" 
-  response = html % stateis 
-  writer.write('HTTP/1.0 200 OK\r\nAccess-Control-Allow-Origin: *\r\nContent-type: text/html\r\n\r\n') 
-  writer.write("1") 
+  response = "1"
+  writer.write('HTTP/1.1 200 OK\r\nAccess-Control-Allow-Origin: *\r\nContent-type: text/html\r\n\r\n') 
+  writer.write(response) 
   await writer.drain() 
   await writer.wait_closed() 
   print("Client disconnected") 
@@ -67,7 +53,7 @@ async def main():
     onboard.on() 
     await asyncio.sleep(0.25) 
     onboard.off() 
-    await asyncio.sleep(5)
+    await asyncio.sleep(0.8)
 
 try:      
   asyncio.run(main()) 
