@@ -2,23 +2,52 @@ import machine
 import Wifi_servidor
 import motor
 import _thread
+import utime
 
 def encoder_handler(pin):
     global paso
     paso += 1
+encoder=machine.Pin(22, machine.Pin.IN,machine.Pin.PULL_UP)
+encoder.irq(trigger=machine.Pin.IRQ_FALLING,handler=encoder_handler)
+encoder.irq(trigger=machine.Pin.IRQ_RISING,handler=encoder_handler)
 
 def controlMotor():
-  global cambio, motor1, rpm_deseado,rpm
+#configuraciones-------------------------------
+  global paso, cambio, motor1, rpm_deseado, angulo_deseado, angulo, rpm, start, freno
+  rpm_deseado = 0
+  angulo_deseado = 0
+  paso = 0
+  cambio = False
   rpm = 0
+  angulo = 0
+  start =False
+  freno = False
+  #------------------------------------
+  motor1 = motor.Motor("EjeX", 
+                       motor.AM6807(machine.PWM(machine.Pin(1, machine.Pin.OUT),
+                                                20000),
+                                    machine.Pin(2, machine.Pin.OUT),
+                                    machine.Pin(3, machine.Pin.OUT)))
+  #datos---------------------------------
+  pul_sub_baj_vuelta = 40 #subidas y bajadas de nivel por vuelta en el sensor
+  tm_encoder = 100
+  timerStart = utime.ticks_ms()
   while True:
     if cambio:
-      if start:
+      if start and not freno:
         motor1.driver.set_velocity(rpm_deseado)
       else:
         motor1.driver.set_velocity(0)
       cambio = False
-    
-    
+
+    time_elapsed = utime.ticks_diff(utime.ticks_ms(),timerStart)
+    if time_elapsed >= tm_encoder:
+      state = machine.disable_irq()
+      rpm = paso*1000*60/(tm_encoder*pul_sub_baj_vuelta)
+      paso = 0
+      machine.enable_irq(state)
+      timerStart = utime.ticks_ms()
+
 def AnalizarRequest(request:str):
   global rpm_deseado, rpm, angulo_deseado, angulo, start, freno
   if '/set_' in request:
@@ -42,31 +71,11 @@ def AnalizarRequest(request:str):
       response = str(rpm)
     if req=="angulo":
       response = str(angulo_deseado)
-  
+  response="1"
   return response
 
 def main():
-#configuraciones-------------------------------
-  global paso, cambio, motor1, rpm_deseado, angulo_deseado
-  rpm_deseado = 0
-  angulo_deseado = 0
-  paso = 0
-  cambio = False
-  #datos---------------------------------
-  pul_sub_baj_vuelta = 40 #subidas y bajadas de nivel por vuelta en el sensor
-  tm_encoder = 100
-  #------------------------------------
-  encoder = machine.Pin(22, machine.Pin.IN)
-  encoder.irq(trigger=machine.Pin.IRQ_FALLING, handler=encoder_handler)
-  encoder.irq(trigger=machine.Pin.IRQ_RISING, handler=encoder_handler)
-
-  motor1 = motor.Motor(motor.TypeAxis.EjeX, 
-                       motor.AM6807(machine.PWM(machine.Pin(1),
-                                                1000),
-                                        machine.Pin(2),
-                                        machine.Pin(3)),
-                       motor.Sensor())
-
+  global cambio
   _thread.start_new_thread(controlMotor, ())
   Wifi_servidor.configWifi('CasaVZ','23060507')
   s=Wifi_servidor.crearSocket()

@@ -1,10 +1,6 @@
-from enum import Enum
 from machine import Pin, PWM
 
-TypeAxis = Enum('TypeAxis',['EjeX','EjeY','EjeZ'])
-TypeDir = Enum('TypeDir',['ccw','cw'])
-"""ccw = counterclockwise rotation
-   cw = clockwise rotation"""
+#TypeAxis = Enum('TypeAxis',['EjeX','EjeY','EjeZ'])
 
 class Driver:
   def __init__(self) -> None:
@@ -31,13 +27,13 @@ class AM6807(Driver):
       El signo de la velocidad indica el sentido de giro"""
 
 class Sensor:
-  def __init__(self) -> None:
-    pass
+  def __init__(self, encoder: Pin, interrupt) -> None:
+    self.encoder = encoder
 
 class Motor:
-  def __init__(self, axis :TypeAxis, driver :Driver, sensor :Sensor):
+  def __init__(self, axis , driver :Driver):
     self.axis = axis
     self.driver = driver
-    self.sensor = sensor
+
 
 
