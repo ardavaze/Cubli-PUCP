@@ -1,46 +1,48 @@
+import network 
+import time
+from machine import Pin 
+import asyncio
 
-try:
-  import usocket as socket
-except Exception:
-  import socket
+onboard = Pin("LED", Pin.OUT, value=0)
+serverQueue = asyncio.Queue()
+POST : int = 0
+GET : int = 1
+VELOCIDAD: int = 0
+ANGULO: int = 1
+ 
+def connect_to_network(ssid: str, password: str) :
+  onboard.on()
+  wlan = network.WLAN(network.STA_IF) 
+  wlan.active(True) 
+  wlan.config(pm = 0xa11140)  # Disable power-save mode 
+  wlan.connect(ssid, password) 
+  max_wait = 10 
+  while max_wait > 0: 
+    if wlan.status() < 0 or wlan.status() >= 3: 
+      break 
+    max_wait -= 1 
+    print('waiting for connection...') 
+    time.sleep(1)
+  if wlan.status() != 3: 
+    raise RuntimeError('network connection failed') 
+  else: 
+    print('connected') 
+    status = wlan.ifconfig() 
+    print('ip = ' + status[0])
 
-from machine import Pin
-import network
-import gc
-
-def configWifi(ssid :str,password :str):
-  gc.collect()
-  led = Pin("LED", Pin.OUT)
-  led.off()
-  station = network.WLAN(network.STA_IF)
-  station.active(True)
-  station.connect(ssid, password)
-  while not station.isconnected():
+async def serve_client(reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
+  print("Client connected") 
+  method_line = await reader.readline() 
+  print(method_line)
+# We are not interested in HTTP request headers, skip them 
+  while await reader.readline() != b"\r\n": 
     pass
-  print('Connection successful')
-  print(station.ifconfig())
-  led.on()
-
-def crearSocket():
-  s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-  s.bind(('', 80))
-  s.listen(5)
-  return s
-
-def EsperaPeticion(s : socket.socket):
-  conn, addr = s.accept()
-  #print('Got a connection from %s' % str(addr))
-  return conn
-
-def ObtenerRequest(conn: socket.socket):
-  request = conn.recv(1024)
-  request = str(request)
-  return request
-
-def CerrarPeticion(conn: socket.socket,response:str):
-  conn.send('HTTP/1.1 200 OK\n')
-  conn.send('Access-Control-Allow-Origin: *\r\n')
-  conn.send('Content-Type: text/html\n')
-  conn.send('Connection: close\n\n')
-  conn.sendall(response)
-  conn.close()
+  if method_line.decode('utf-8').startswith("POST"):
+    request_line = await reader.readline()
+    print(request_line)
+  response = "1"
+  writer.write(b'HTTP/1.1 200 OK\r\nAccess-Control-Allow-Origin: *\r\nContent-type: text/html\r\n\r\n') 
+  writer.write(response.encode()) 
+  await writer.drain() 
+  await writer.wait_closed() 
+  print("Client disconnected") 
