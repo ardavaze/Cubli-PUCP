@@ -1,5 +1,5 @@
 from machine import Pin, PWM 
-import asyncio
+import uasyncio as asyncio
 import Wifi_servidor
 
 onboard = Pin("LED", Pin.OUT, value=0)

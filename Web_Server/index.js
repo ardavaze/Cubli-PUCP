@@ -71,7 +71,7 @@ function enviarDatos(tipo_dato,dato,tiempoEspera,funcion){
     xhr.open("POST", "http://"+ip_rasp+"/"+tipo_dato, true);
 	xhr.setRequestHeader("Content-Type", "text/plain");
 	body = dato
-    xhr.send(body + "\r\n");
+    xhr.send(body);
 
     // Maneja la respuesta
     xhr.onreadystatechange = function() {		

@@ -1,10 +1,9 @@
 import network 
 import time
 from machine import Pin 
-import asyncio
+import uasyncio as asyncio
 
 onboard = Pin("LED", Pin.OUT, value=0)
-serverQueue = asyncio.Queue()
 POST : int = 0
 GET : int = 1
 VELOCIDAD: int = 0
@@ -26,23 +25,37 @@ def connect_to_network(ssid: str, password: str) :
   if wlan.status() != 3: 
     raise RuntimeError('network connection failed') 
   else: 
-    print('connected') 
     status = wlan.ifconfig() 
     print('ip = ' + status[0])
 
 async def serve_client(reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
-  print("Client connected") 
-  method_line = await reader.readline() 
-  print(method_line)
-# We are not interested in HTTP request headers, skip them 
-  while await reader.readline() != b"\r\n": 
-    pass
-  if method_line.decode('utf-8').startswith("POST"):
-    request_line = await reader.readline()
-    print(request_line)
-  response = "1"
-  writer.write(b'HTTP/1.1 200 OK\r\nAccess-Control-Allow-Origin: *\r\nContent-type: text/html\r\n\r\n') 
-  writer.write(response.encode()) 
-  await writer.drain() 
-  await writer.wait_closed() 
-  print("Client disconnected") 
+  print("Client connected")
+# Leer la línea de solicitud
+  request_line = await reader.readline()
+  request_line = request_line.decode().strip()
+  if request_line.startswith("POST"):
+    # Leer los encabezados
+    headers = []
+    while True:
+      header = await reader.readline()
+      if header == b'\r\n':  # Fin de los encabezados
+          break
+      headers.append(header.decode().strip())
+    content_length_header = [h for h in headers if h.startswith('Content-Length')]
+    content_length = int(content_length_header[0].split(': ')[1]) if content_length_header else None
+    if content_length is not None:
+      body = await reader.readexactly(content_length)
+      body=body.decode().strip()
+      print(body)
+    else:
+      body= ''
+  else:
+    while await reader.readline() != b'\r\n':
+      pass
+    body= ''  # No hay cuerpo para métodos como GET
+  response = "1".encode()
+  writer.write('HTTP/1.1 200 OK\r\nAccess-Control-Allow-Origin: *\r\nContent-type: text/html\r\n\r\n') 
+  writer.write(response) 
+  await writer.drain()  # type: ignore
+  await writer.wait_closed()  # type: ignore
+  print("Client disconnected")
