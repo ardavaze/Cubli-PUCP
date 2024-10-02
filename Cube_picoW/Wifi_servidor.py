@@ -8,6 +8,13 @@ POST : int = 0
 GET : int = 1
 VELOCIDAD: int = 0
 ANGULO: int = 1
+
+rpm_deseado = 0
+angulo_deseado = 0
+rpm = 0
+angulo = 0
+start =False
+freno = False
  
 def connect_to_network(ssid: str, password: str) :
   onboard.on()
@@ -49,11 +56,29 @@ async def serve_client(reader: asyncio.StreamReader, writer: asyncio.StreamWrite
       print(body)
     else:
       body= ''
+    tipo_dato_request=request_line.split("/")[1].split(" ")[0]
+    try:
+      if tipo_dato_request=="velocidad":
+        rpm_deseado=int(body)
+      if tipo_dato_request=="angulo":
+        angulo_deseado= int(body)
+      if tipo_dato_request=="start":
+        start = int(body)
+      if tipo_dato_request=="freno":
+        freno = int(body)
+    except:
+      print("Error en el dato recibido")
+    response = "1".encode()
   else:
     while await reader.readline() != b'\r\n':
       pass
     body= ''  # No hay cuerpo para métodos como GET
-  response = "1".encode()
+    tipo_dato_request=request_line.split("/")[1].split(" ")[0]
+    if tipo_dato_request=="velocidad":
+      response = rpm.encode()
+    if tipo_dato_request=="angulo":
+      response = angulo.encode()
+    
   writer.write('HTTP/1.1 200 OK\r\nAccess-Control-Allow-Origin: *\r\nContent-type: text/html\r\n\r\n') 
   writer.write(response) 
   await writer.drain()  # type: ignore
