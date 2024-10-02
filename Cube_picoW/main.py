@@ -1,15 +1,16 @@
-import machine
+from machine import Pin, PWM 
+import uasyncio as asyncio
 import Wifi_servidor
 import motor
-import _thread
-import utime
 
 def encoder_handler(pin):
     global paso
     paso += 1
-encoder=machine.Pin(22, machine.Pin.IN,machine.Pin.PULL_UP)
-encoder.irq(trigger=machine.Pin.IRQ_FALLING,handler=encoder_handler)
-encoder.irq(trigger=machine.Pin.IRQ_RISING,handler=encoder_handler)
+encoder=Pin(22, Pin.IN,Pin.PULL_UP)
+encoder.irq(trigger=Pin.IRQ_FALLING,handler=encoder_handler)
+encoder.irq(trigger=Pin.IRQ_RISING,handler=encoder_handler)
+
+onboard = Pin("LED", Pin.OUT, value=0)
 
 def controlMotor():
 #configuraciones-------------------------------
@@ -48,6 +49,22 @@ def controlMotor():
       machine.enable_irq(state)
       timerStart = utime.ticks_ms()
 
+
+async def main():
+  print('Connecting to Network...') 
+  Wifi_servidor.connect_to_network('redpucp', 'C9AA28BA93') 
+  print('Setting up webserver...') 
+  asyncio.create_task(asyncio.start_server(Wifi_servidor.serve_client, "0.0.0.0", 80))  # type: ignore
+  while True: 
+    onboard.on() 
+    await asyncio.sleep(0.25) 
+    onboard.off() 
+    await asyncio.sleep(0.8)
+try:      
+  asyncio.run(main()) 
+finally: 
+  asyncio.new_event_loop()
+
 def AnalizarRequest(request:str):
   global rpm_deseado, rpm, angulo_deseado, angulo, start, freno
   if '/set_' in request:
@@ -73,22 +90,3 @@ def AnalizarRequest(request:str):
       response = str(angulo_deseado)
   response="1"
   return response
-
-def main():
-  global cambio
-  _thread.start_new_thread(controlMotor, ())
-  Wifi_servidor.configWifi('CasaVZ','23060507')
-  s=Wifi_servidor.crearSocket()
-  while True:
-    try:
-      conn= Wifi_servidor.EsperaPeticion(s)
-      request = Wifi_servidor.ObtenerRequest(conn)
-      response = AnalizarRequest(request)
-      cambio = True
-      Wifi_servidor.CerrarPeticion(conn,response)
-    except Exception as e:
-      print(e)
-      conn.close()         
-
-main()
-    
